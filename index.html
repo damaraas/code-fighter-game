@@ -5,11 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Fighter Game</title>
     <link rel="stylesheet" href="maze.css">
-    <script src="maze.js"></script>
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="assets/programmer-tired.png" />
+    <!-- Font -->
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
 </head>
 <body>
-    <canvas id="board"></canvas>
+    <div class="opening">
+        <img class="judul" src="assets/title.png" alt="judul" width="700px">
+        <div class="theme-buttons">
+            <h1>Choose a theme</h1>
+            <button class="theme-button" data-theme="programmer">Programmer</button>
+            <button class="theme-button" data-theme="kitty">Kitty</button>
+        </div>
+    </div>
+
+    <canvas id="board" width="560" height="560" style="display: none;"></canvas>
+    <button id="back-home" style="display: none;">Back to Home</button>
+    <script src="maze.js"></script>
 </body>
 </html>

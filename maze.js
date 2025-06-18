@@ -11,26 +11,26 @@ const boardHeight = rowCount * tileSize;
 let context;
 
 // images
-let programmerTiredImage;
-let programmerLilHappyImage;
-let fileImage;
-let coffeeImage;
-let bugImage;
+let playerImage;
+let playerHappyImage;
+let itemImage;
+let powerupImage;
+let enemyImage;
 let wallImage;
 
-// X = wall, O = skip, p = programmer, ' ' = file
-// b = bug, c = coffee
+// X = wall, O = skip, p = player, ' ' = item
+// b = enemy, c = power up
 const tileMap = [
     'XXXXXXXXXXXXXXXXXXX',
     'X   b    X    c   X',
     'X XX XXX X XXX XX X',
-    'X                 X',
+    'X    c            X',
     'X XX X XXXXX X XX X',
     'X    X       X    X',
     'XXXX XXXX XXXX XXXX',
-    'OOOX X       X XOOO',
+    'OOOX X   c   X XOOO',
     'XXXX X XXOXX X XXXX',
-    'O        b     c  O',
+    'X        b     c  X',
     'XXXX X XXXXX X XXXX',
     'OOOX X       X XOOO',
     'XXXX X XXXXX X XXXX',
@@ -45,58 +45,126 @@ const tileMap = [
 ];
 
 const walls = new Set();
-const files = new Set();
-const bugs = new Set();
-const coffees = new Set();
-let programmer;
+const items = new Set();
+const enemies = new Set();
+const powerups = new Set();
+let player;
+let currentTheme = 'programmer';
 
 const directions = ['U', 'D', 'R', 'L'];
 let score = 0;
 let lives = 3;
 let gameOver = false;
 
+const themes = {
+  programmer: {
+    player: 'assets/programmer-tired.png',
+    player_happy: 'assets/programmer-lilhappy.png',
+    item: 'assets/file.png',
+    powerup: 'assets/coffee.png',
+    enemy: 'assets/bug.png',
+  },
+  kitty: {
+    player: 'assets/kitty.png',
+    player_happy: 'assets/kitty.png',
+    item: 'assets/fish.png',
+    powerup: 'assets/milk.png',
+    enemy: 'assets/dog.png',
+  },
+};
+
 window.onload = function() {
+    const themeButtons = document.querySelectorAll('.theme-button');
+
+    themeButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+        const theme = button.innerText.toLowerCase();
+        currentTheme = theme;
+
+        let bgImage = '';
+
+        if (theme.includes('programmer')) {
+        bgImage = 'url(\'assets/bg-programmer.png\')';
+        } else if (theme.includes('kitty')) {
+        bgImage = 'url(\'assets/bg-kitty.png\')';
+        }
+
+        document.body.style.setProperty('--bg-image', bgImage);
+        document.querySelector('.opening').style.display = 'none';
+        document.getElementById('board').style.display = 'block';
+        document.getElementById('back-home').style.display = 'block';
+
+        gameOver = false;
+        initGame();
+        });
+    });
+
+    document.getElementById('back-home').addEventListener('click', () => {
+        gameOver = true;
+
+        document.getElementById('board').style.display = 'none';
+        document.getElementById('back-home').style.display = 'none';
+        document.querySelector('.opening').style.display = 'block';
+        document.body.style.removeProperty('--bg-image');
+
+        // Reset data
+        score = 0;
+        lives = 3;
+
+        // Reset player
+        player = null;
+    });
+};
+
+function initGame() {
+    document.removeEventListener('keyup', movePlayer);
+
     board = document.getElementById('board');
     board.height = boardHeight;
     board.width = boardWidth;
     context = board.getContext('2d');
 
+    // reset player
+    player = null;
+
     loadImages();
     loadMap();
     // console.log(walls.size);
-    // console.log(files.size);
-    // console.log(bugs.size);
-    // console.log(coffees.size);
-    for (let bug of bugs.values()) {
+    // console.log(items.size);
+    // console.log(enemies.size);
+    // console.log(powerups.size);
+    for (let enemy of enemies.values()) {
         const newDirection = directions[Math.floor(Math.random() * 4)]; // 0-3
-        bug.updateDirection(newDirection);
+        enemy.updateDirection(newDirection);
     }
     update();
-    document.addEventListener('keyup', moveProgrammer);
-};
+    document.addEventListener('keyup', movePlayer);
+}
 
 function loadImages() {
+  const theme = themes[currentTheme];
+
     wallImage = new Image();
     wallImage.src = 'assets/wall.png';
 
-    fileImage = new Image();
-    fileImage.src = 'assets/file.png';
-    coffeeImage = new Image();
-    coffeeImage.src = 'assets/coffee.png';
-    bugImage = new Image();
-    bugImage.src = 'assets/bug.png';
+    itemImage = new Image();
+    itemImage.src = theme.item;
+    powerupImage = new Image();
+    powerupImage.src = theme.powerup;
+    enemyImage = new Image();
+    enemyImage.src = theme.enemy;
 
-    programmerTiredImage = new Image();
-    programmerTiredImage.src = 'assets/programmer-tired.png';
-    programmerLilHappyImage = new Image();
-    programmerLilHappyImage.src = 'assets/programmer-lilhappy.png';
+    playerImage = new Image();
+    playerImage.src = theme.player;
+    playerHappyImage = new Image();
+    playerHappyImage.src = theme.player_happy;
 }
 
 function loadMap() {
     walls.clear();
-    files.clear();
-    bugs.clear();
-    coffees.clear();
+    items.clear();
+    enemies.clear();
+    powerups.clear();
 
     for (let r = 0; r < rowCount; r++) {
         for (let c = 0; c < columnCount; c++) {
@@ -110,16 +178,16 @@ function loadMap() {
                 const wall = new Block(wallImage, x, y, tileSize, tileSize);
                 walls.add(wall);
             } else if (tileMapChar == 'b') {
-                const bug = new Block(bugImage, x, y, tileSize, tileSize);
-                bugs.add(bug);
+                const enemy = new Block(enemyImage, x, y, tileSize, tileSize);
+                enemies.add(enemy);
             } else if (tileMapChar == 'p') {
-                programmer = new Block(programmerTiredImage, x, y, tileSize, tileSize);
+                player = new Block(playerImage, x, y, tileSize, tileSize);
             } else if (tileMapChar == ' ') {
-                const file = new Block(fileImage, x, y, tileSize, tileSize);
-                files.add(file);
+                const item = new Block(itemImage, x, y, tileSize, tileSize);
+                items.add(item);
             } else if (tileMapChar == 'c') {
-                const coffee = new Block(coffeeImage, x, y, tileSize, tileSize);
-                coffees.add(coffee);
+                const powerup = new Block(powerupImage, x, y, tileSize, tileSize);
+                powerups.add(powerup);
             }
         }
     }
@@ -136,22 +204,22 @@ function update() {
 
 function draw() {
     context.clearRect(0, 0, board.width, board.height);
-    context.drawImage(programmer.image, programmer.x, programmer.y, programmer.width, programmer.height);
-    for (let bug of bugs.values()) {
-        context.drawImage(bug.image, bug.x, bug.y, bug.width, bug.height);
+    context.drawImage(player.image, player.x, player.y, player.width, player.height);
+    for (let enemy of enemies.values()) {
+        context.drawImage(enemy.image, enemy.x, enemy.y, enemy.width, enemy.height);
     }
     for (let wall of walls.values()) {
         context.drawImage(wall.image, wall.x, wall.y, wall.width, wall.height);
     }
-    for (let file of files.values()) {
-        context.drawImage(file.image, file.x, file.y, file.width, file.height);
+    for (let item of items.values()) {
+        context.drawImage(item.image, item.x, item.y, item.width, item.height);
     }
-    for (let coffee of coffees.values()) {
-        context.drawImage(coffee.image, coffee.x, coffee.y, coffee.width, coffee.height);
+    for (let powerup of powerups.values()) {
+        context.drawImage(powerup.image, powerup.x, powerup.y, powerup.width, powerup.height);
     }
 
     // score
-    context.fillStyle = 'white';
+    context.fillStyle = 'black';
     context.font = '14px sans-serif';
     if (gameOver) {
         context.fillText('Game Over! Score: ' + String(score), tileSize/2, tileSize/2);
@@ -162,20 +230,20 @@ function draw() {
 }
 
 function move() {
-    programmer.x += programmer.velocityX;
-    programmer.y += programmer.velocityY;
+    player.x += player.velocityX;
+    player.y += player.velocityY;
 
     // check wall collisions
     for ( let wall of walls.values()) {
-        if (collision(programmer, wall)) {
-            programmer.x -= programmer.velocityX;
-            programmer.y -= programmer.velocityY;
+        if (collision(player, wall)) {
+            player.x -= player.velocityX;
+            player.y -= player.velocityY;
             break;
         }
     }
 
-    for (let bug of bugs.values()) {
-        if (collision(bug, programmer)) {
+    for (let enemy of enemies.values()) {
+        if (collision(enemy, player)) {
             lives -= 1;
             if (lives == 0) {
                 gameOver = true;
@@ -184,56 +252,56 @@ function move() {
             resetPositions();
         }
 
-        if (bug.y == tileSize * 9 && bug.direction != 'U' && bug.direction != 'D') {
-            bug.updateDirection('U');
+        if (enemy.y == tileSize * 9 && enemy.direction != 'U' && enemy.direction != 'D') {
+            enemy.updateDirection('U');
         }
 
-        bug.x += bug.velocityX;
-        bug.y += bug.velocityY;
+        enemy.x += enemy.velocityX;
+        enemy.y += enemy.velocityY;
         for ( let wall of walls.values()) {
-            if (collision(bug, wall) || bug.x <= 0 || bug.x + bug.width >= boardWidth) {
-                bug.x -= bug.velocityX;
-                bug.y -= bug.velocityY;
+            if (collision(enemy, wall) || enemy.x <= 0 || enemy.x + enemy.width >= boardWidth) {
+                enemy.x -= enemy.velocityX;
+                enemy.y -= enemy.velocityY;
                 const newDirection = directions[Math.floor(Math.random() * 4)];
-                bug.updateDirection(newDirection);
+                enemy.updateDirection(newDirection);
             }
         }
     }
 
     // check file collision
-    let fileEaten = null;
-    for (let file of files.values()) {
-        if (collision(programmer, file)) {
-            fileEaten = file;
+    let itemEaten = null;
+    for (let item of items.values()) {
+        if (collision(player, item)) {
+            itemEaten = item;
             score += 10;
             break;
         }
     }
-    files.delete(fileEaten);
+    items.delete(itemEaten);
 
     // check coffee collision
-    let coffeeTaken = null;
-    for (let coffee of coffees.values()) {
-        if (collision(programmer, coffee)) {
-            coffeeTaken = coffee;
-            programmer.image = programmerLilHappyImage; // expression change
+    let powerupTaken = null;
+    for (let powerup of powerups.values()) {
+        if (collision(player, powerup)) {
+            powerupTaken = powerup;
+            player.image = playerImage; // expression change
             setTimeout(() => {
-                programmer.image = programmerTiredImage; // back to tired expression
+                player.image = playerHappyImage; // back to tired expression
             }, 5000); // 5 seconds
             score += 5;
             break;
         }
     }
-    coffees.delete(coffeeTaken);
+    powerups.delete(powerupTaken);
 
     // finish the game
-    if (files.size == 0) {
+    if (items.size == 0) {
         loadMap();
         resetPositions();
     }
 }
 
-function moveProgrammer(e) {
+function movePlayer(e) {
     if (gameOver) {
         loadMap();
         resetPositions();
@@ -244,16 +312,16 @@ function moveProgrammer(e) {
         return;
     }
     if (e.code == 'ArrowUp' || e.code == 'KeyW') {
-        programmer.updateDirection('U');
+        player.updateDirection('U');
     }
     else if (e.code == 'ArrowDown' || e.code == 'KeyS') {
-        programmer.updateDirection('D');
+        player.updateDirection('D');
     }
     else if (e.code == 'ArrowLeft' || e.code == 'KeyA') {
-        programmer.updateDirection('L');
+        player.updateDirection('L');
     }
     else if (e.code == 'ArrowRight' || e.code == 'KeyD') {
-        programmer.updateDirection('R');
+        player.updateDirection('R');
     }
 }
 
@@ -265,13 +333,13 @@ function collision(a, b) {
 }
 
 function resetPositions() {
-    programmer.reset();
-    programmer.velocityX = 0;
-    programmer.velocityY = 0;
-    for (let bug of bugs.values()) {
-        bug.reset();
+    player.reset();
+    player.velocityX = 0;
+    player.velocityY = 0;
+    for (let enemy of enemies.values()) {
+        enemy.reset();
         const newDirection = directions[Math.floor(Math.random() * 4 )];
-        bug.updateDirection(newDirection);
+        enemy.updateDirection(newDirection);
     }
 }
 

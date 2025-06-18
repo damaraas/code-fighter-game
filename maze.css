@@ -1,7 +1,62 @@
+* {
+    font-family: 'Lilita One', cursive;
+}
+
 body {
     text-align: center;
+    background-color: #EB5B00;
+    background-image: var(--bg-image);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow: hidden;
+    transition: background-image 0.4s ease, background-color 0.3s ease;
 }
 
 #board {
-    background-color: #586B8F;
+    background-color: #898AC4;
+    display: block;
+    margin: 0 auto;
+}
+
+.judul {
+    margin-top: 250px;
+}
+
+.theme-buttons h1 {
+    color: white;
+}
+
+.theme-button {
+    background-color: #D91656;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    margin: 5px;
+    font-size: 20px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.theme-button:hover {
+    background-color: #640D5F;
+}
+
+#back-home {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: #640D5F;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 30px;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+#back-home:hover {
+  background-color: #D91656;
 }
