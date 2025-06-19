@@ -56,6 +56,10 @@ let score = 0;
 let lives = 3;
 let gameOver = false;
 
+let backgroundMusic = new Audio('assets/bgm.mp3');
+backgroundMusic.loop = true;
+backgroundMusic.volume = 0.5;
+
 const themes = {
   programmer: {
     player: 'assets/programmer-tired.png',
@@ -95,6 +99,10 @@ window.onload = function() {
         document.getElementById('back-home').style.display = 'block';
 
         gameOver = false;
+
+        // Play music
+        backgroundMusic.play();
+
         initGame();
         });
     });
@@ -106,6 +114,10 @@ window.onload = function() {
         document.getElementById('back-home').style.display = 'none';
         document.querySelector('.opening').style.display = 'block';
         document.body.style.removeProperty('--bg-image');
+
+        // Stop music
+        backgroundMusic.pause();
+        backgroundMusic.currentTime = 0;
 
         // Reset data
         score = 0;
